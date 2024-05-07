@@ -1,8 +1,9 @@
 import * as messaging from "messaging";
 import { settingsStorage } from "settings";
 import { formatDate, subDays } from "./date";
+import { me as companion } from "companion";
 
-const fetchSleepGoal = async (accessToken: string) => {
+const fetchSleepGoal = async (accessToken: string): Promise<number | null> => {
   const response = await fetch(
     "https://api.fitbit.com/1.2/user/-/sleep/goal.json",
     {
@@ -12,8 +13,16 @@ const fetchSleepGoal = async (accessToken: string) => {
       },
     }
   );
-  const data: { goal: { minDuration: number } } = await response.json();
-  return data.goal.minDuration;
+  if (response.status !== 200) {
+    console.error("[FETCH]: " + response.status);
+
+    const body = await response.text();
+    console.error("[FETCH]: " + body);
+    return null;
+  }
+
+  const data: { goal?: { minDuration?: number } } = await response.json();
+  return data?.goal?.minDuration || null;
 };
 
 const fetchLatestSleep = async (accessToken: string) => {
@@ -61,6 +70,7 @@ settingsStorage.onchange = (evt) => {
   if (evt.key === "oauth") {
     const data = JSON.parse(evt.newValue);
     const accessToken = data.access_token;
+    settingsStorage.setItem("oauth", data);
     syncState(accessToken);
   }
 };
@@ -80,3 +90,6 @@ const refreshState = async () => {
 messaging.peerSocket.onopen = () => {
   refreshState();
 };
+
+companion.wakeInterval = 15 * 60 * 1000;
+companion.addEventListener("wakeinterval", refreshState);
