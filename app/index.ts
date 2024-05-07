@@ -48,7 +48,13 @@ const syncLabel = () => {
   );
   const remainingLabel = formatDuration(dayTimeMinutes * 60 - elapsedSeconds);
   const lastSleepLabel = Math.round((state.lastSleepMinutes / 60) * 10) / 10;
-  remainingTimeText.text = `${remainingLabel}`;
-  lastSleepText.text = `Last Sleep: ${lastSleepLabel} hrs`;
-  clockText.text = formatDate(state.currentTime);
+  if (remainingTimeText) {
+    remainingTimeText.text = `${remainingLabel}`;
+  }
+  if (lastSleepText) {
+    lastSleepText.text = `Last Sleep: ${lastSleepLabel} hrs`;
+  }
+  if (clockText) {
+    clockText.text = formatDate(state.currentTime);
+  }
 };

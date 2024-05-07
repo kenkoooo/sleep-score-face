@@ -66,22 +66,26 @@ const syncState = async (accessToken: string) => {
   }
 };
 
-settingsStorage.onchange = (evt) => {
+settingsStorage.onchange = async (evt) => {
   if (evt.key === "oauth") {
-    const data = JSON.parse(evt.newValue);
-    const accessToken = data.access_token;
-    settingsStorage.setItem("oauth", data);
-    syncState(accessToken);
+    const data = safeParse(evt.newValue);
+    if (data) {
+      const accessToken = data.access_token;
+      await syncState(accessToken);
+    }
   }
 };
 
 const refreshState = async () => {
   for (let index = 0; index < settingsStorage.length; index++) {
     const key = settingsStorage.key(index);
-    if (key && key === "oauth") {
-      const data = JSON.parse(settingsStorage.getItem(key));
-      const accessToken = data.access_token;
-      syncState(accessToken);
+    if (key === "oauth") {
+      const item = settingsStorage.getItem("oauth");
+      const data = safeParse(item);
+      if (data) {
+        const accessToken = data.access_token;
+        await syncState(accessToken);
+      }
     }
   }
 };
@@ -93,3 +97,25 @@ messaging.peerSocket.onopen = () => {
 
 companion.wakeInterval = 15 * 60 * 1000;
 companion.addEventListener("wakeinterval", refreshState);
+
+const safeParse = (value: unknown) => {
+  if (typeof value !== "string") {
+    return;
+  }
+  try {
+    const data: unknown = JSON.parse(value);
+    if (typeof data !== "object" || !data) {
+      return;
+    }
+    if (!("access_token" in data)) {
+      return;
+    }
+    const access_token = data.access_token;
+    if (typeof access_token !== "string") {
+      return;
+    }
+    return { access_token };
+  } catch (error) {
+    console.error("JSON parse error", error);
+  }
+};
