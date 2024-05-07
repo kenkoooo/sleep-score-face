@@ -1,0 +1,6 @@
+<svg viewport-fill="black">
+  <text id="clockText" font-size="80" font-family="System-Bold" text-length="32" text-anchor="middle" x="50%" y="50%"
+    fill="white" />
+  <text id="sleepText" font-size="40" font-family="System-Bold" text-length="32" text-anchor="middle" x="50%" y="50%+60"
+    fill="white" >14.5 hrs / 00:00</text>
+</svg>
