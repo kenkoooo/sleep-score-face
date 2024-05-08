@@ -12,6 +12,7 @@
     "**/*.js",
     "**/*.tsx",
     "**/*.jsx",
+    "../lib/*.ts",
     "../node_modules/fitbit-sdk-types/types/settings"
   ]
 }

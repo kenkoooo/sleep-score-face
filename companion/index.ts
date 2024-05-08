@@ -2,6 +2,7 @@ import * as messaging from "messaging";
 import { settingsStorage } from "settings";
 import { formatDate, subDays } from "./date";
 import { me as companion } from "companion";
+import { CLIENT_ID, CLIENT_SECRET } from "../lib/env";
 
 const fetchSleepGoal = async (accessToken: string): Promise<number | null> => {
   const response = await fetch(
@@ -53,6 +54,27 @@ const fetchLatestSleep = async (accessToken: string) => {
   };
 };
 
+const refreshAccessToken = async (refreshToken: string) => {
+  console.log("refreshing accessToken ...");
+  const response = await fetch("https://api.fitbit.com/oauth2/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${btoa(`${CLIENT_ID}:${CLIENT_SECRET}`)}`,
+    },
+    body: `grant_type=refresh_token&refresh_token=${refreshToken}`,
+  });
+  const body = await response.text();
+
+  if (response.status !== 200) {
+    console.error("[FETCH]: " + response.status);
+    console.error("[FETCH]: " + body);
+    return null;
+  }
+
+  return body;
+};
+
 const syncState = async (accessToken: string) => {
   console.log("[FETCH]: Syncing state ...");
   try {
@@ -67,24 +89,41 @@ const syncState = async (accessToken: string) => {
 };
 
 settingsStorage.onchange = async (evt) => {
+  console.log("User logged in ...");
   if (evt.key === "oauth") {
     const data = safeParse(evt.newValue);
-    if (data) {
-      const accessToken = data.access_token;
-      await syncState(accessToken);
+    if (data?.accessToken) {
+      await syncState(data.accessToken);
     }
   }
 };
 
 const refreshState = async () => {
+  console.log("Refreshing state ...");
+
+  // Refresh accessToken
   for (let index = 0; index < settingsStorage.length; index++) {
     const key = settingsStorage.key(index);
     if (key === "oauth") {
       const item = settingsStorage.getItem("oauth");
       const data = safeParse(item);
-      if (data) {
-        const accessToken = data.access_token;
-        await syncState(accessToken);
+      if (data?.refreshToken) {
+        const newValue = await refreshAccessToken(data?.refreshToken);
+        if (newValue) {
+          settingsStorage.setItem("oauth", newValue);
+        }
+      }
+    }
+  }
+
+  // Refresh state
+  for (let index = 0; index < settingsStorage.length; index++) {
+    const key = settingsStorage.key(index);
+    if (key === "oauth") {
+      const item = settingsStorage.getItem("oauth");
+      const data = safeParse(item);
+      if (data?.accessToken) {
+        await syncState(data.accessToken);
       }
     }
   }
@@ -92,6 +131,7 @@ const refreshState = async () => {
 
 // Message socket opens
 messaging.peerSocket.onopen = () => {
+  console.log("Open socket");
   refreshState();
 };
 
@@ -104,18 +144,30 @@ const safeParse = (value: unknown) => {
   }
   try {
     const data: unknown = JSON.parse(value);
-    if (typeof data !== "object" || !data) {
-      return;
-    }
-    if (!("access_token" in data)) {
-      return;
-    }
-    const access_token = data.access_token;
-    if (typeof access_token !== "string") {
-      return;
-    }
-    return { access_token };
+
+    const accessToken =
+      hasOwnProperty(data, "access_token") &&
+      typeof data.access_token === "string"
+        ? data.access_token
+        : undefined;
+    const refreshToken =
+      hasOwnProperty(data, "refresh_token") &&
+      typeof data.refresh_token === "string"
+        ? data.refresh_token
+        : undefined;
+
+    return { accessToken, refreshToken };
   } catch (error) {
     console.error("JSON parse error", error);
   }
+};
+
+const hasOwnProperty = <K extends PropertyKey>(
+  value: unknown,
+  prop: K
+): value is Record<K, unknown> => {
+  if (typeof value !== "object" || !value) {
+    return false;
+  }
+  return prop in value;
 };
