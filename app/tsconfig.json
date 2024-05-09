@@ -8,6 +8,7 @@
   "include": [
     "**/*.ts",
     "**/*.js",
+    "../lib/*.ts",
     "../node_modules/fitbit-sdk-types/types/device"
   ]
 }

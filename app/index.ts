@@ -2,14 +2,11 @@ import clock from "clock";
 import document from "document";
 import * as messaging from "messaging";
 import { formatDate, formatDuration } from "./format";
-
-type Message = {
-  sleepGoal: number | null;
-  sleep: { minutes: number; endTime: string } | null;
-};
+import { Message } from "../lib/types";
 
 clock.granularity = "seconds";
 
+const recentSleepList = document.getElementById("recentSleepList");
 const clockText = document.getElementById("clockText");
 const remainingTimeText = document.getElementById("remainingTimeText");
 const lastSleepText = document.getElementById("lastSleepText");
@@ -19,6 +16,7 @@ const state = {
   sleepGoalMinutes: 0,
   lastSleepEnd: new Date(),
   lastSleepMinutes: 0,
+  sleepDebts: [] as string[],
 };
 
 clock.ontick = (evt) => {
@@ -35,6 +33,7 @@ messaging.peerSocket.onmessage = (evt) => {
     state.lastSleepEnd = new Date(data.sleep.endTime);
     state.lastSleepMinutes = data.sleep.minutes;
   }
+  state.sleepDebts = data.sleepDebts;
   syncLabel();
 };
 
@@ -56,5 +55,8 @@ const syncLabel = () => {
   }
   if (clockText) {
     clockText.text = formatDate(state.currentTime);
+  }
+  if (recentSleepList) {
+    recentSleepList.text = state.sleepDebts.join(" / ");
   }
 };
