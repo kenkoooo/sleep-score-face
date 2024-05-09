@@ -21,8 +21,28 @@ export const formatDuration = (seconds: number) => {
   }
 };
 
-export const formatDate = (date: Date) => {
+export const formatTime = (date: Date) => {
   const hours = zeroPad(date.getHours());
   let minutes = zeroPad(date.getMinutes());
   return `${hours}:${minutes}`;
+};
+
+export const formatDate = (date: Date) => {
+  const MONTHS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ] as const;
+  const day = date.getDate();
+  const month = MONTHS[date.getMonth()];
+  return `${month} ${day}`;
 };

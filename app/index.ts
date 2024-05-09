@@ -1,15 +1,15 @@
 import clock from "clock";
 import document from "document";
 import * as messaging from "messaging";
-import { formatDate, formatDuration } from "./format";
+import { formatTime, formatDuration, formatDate } from "./format";
 import { Message } from "../lib/types";
 
 clock.granularity = "seconds";
 
 const recentSleepList = document.getElementById("recentSleepList");
+const dateText = document.getElementById("dateText");
 const clockText = document.getElementById("clockText");
 const remainingTimeText = document.getElementById("remainingTimeText");
-const lastSleepText = document.getElementById("lastSleepText");
 
 const state = {
   currentTime: new Date(),
@@ -46,17 +46,16 @@ const syncLabel = () => {
     0
   );
   const remainingLabel = formatDuration(dayTimeMinutes * 60 - elapsedSeconds);
-  const lastSleepLabel = Math.round((state.lastSleepMinutes / 60) * 10) / 10;
   if (remainingTimeText) {
     remainingTimeText.text = `${remainingLabel}`;
   }
-  if (lastSleepText) {
-    lastSleepText.text = `Last Sleep: ${lastSleepLabel} hrs`;
-  }
   if (clockText) {
-    clockText.text = formatDate(state.currentTime);
+    clockText.text = formatTime(state.currentTime);
+  }
+  if (dateText) {
+    dateText.text = formatDate(state.currentTime);
   }
   if (recentSleepList) {
-    recentSleepList.text = state.sleepDebts.join(" / ");
+    recentSleepList.text = state.sleepDebts.join("  ");
   }
 };
