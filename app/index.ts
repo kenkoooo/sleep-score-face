@@ -10,6 +10,7 @@ const recentSleepList = document.getElementById("recentSleepList");
 const dateText = document.getElementById("dateText");
 const clockText = document.getElementById("clockText");
 const remainingTimeText = document.getElementById("remainingTimeText");
+const lastSleepText = document.getElementById("lastSleepText");
 
 const state = {
   currentTime: new Date(),
@@ -38,14 +39,13 @@ messaging.peerSocket.onmessage = (evt) => {
 };
 
 const syncLabel = () => {
-  const dayTimeMinutes = 24 * 60 - state.sleepGoalMinutes;
-  const elapsedSeconds = Math.max(
-    Math.floor(
-      (state.currentTime.getTime() - state.lastSleepEnd.getTime()) / 1000
-    ),
-    0
+  const remainingSeconds = calcRemainingSeconds(
+    state.currentTime,
+    state.lastSleepEnd,
+    state.sleepGoalMinutes,
+    state.lastSleepMinutes
   );
-  const remainingLabel = formatDuration(dayTimeMinutes * 60 - elapsedSeconds);
+  const remainingLabel = formatDuration(remainingSeconds);
   if (remainingTimeText) {
     remainingTimeText.text = `${remainingLabel}`;
   }
@@ -58,4 +58,25 @@ const syncLabel = () => {
   if (recentSleepList) {
     recentSleepList.text = state.sleepDebts.join("  ");
   }
+  if (lastSleepText) {
+    const hour = Math.floor((state.lastSleepMinutes / 60) * 10) / 10;
+    lastSleepText.text = `Last sleep: ${hour}h`;
+  }
+};
+
+const calcRemainingSeconds = (
+  currentTime: Date,
+  lastSleepEnd: Date,
+  sleepGoalMinutes: number,
+  lastSleepMinutes: number
+) => {
+  const dayTimeMinutes = 24 * 60 - sleepGoalMinutes;
+  const elapsedSeconds = Math.max(
+    Math.floor((currentTime.getTime() - lastSleepEnd.getTime()) / 1000),
+    0
+  );
+  const debtMinutes = Math.max(sleepGoalMinutes - lastSleepMinutes, 0);
+  const remainingSeconds =
+    dayTimeMinutes * 60 - debtMinutes * 60 - elapsedSeconds;
+  return remainingSeconds;
 };
